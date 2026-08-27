@@ -27,6 +27,12 @@ class DonorController extends Controller
      */
     public function nearby(Request $request)
     {
+        if ($request->has('blood_group')) {
+            $request->merge([
+                'blood_group' => str_replace(' ', '+', trim($request->string('blood_group'))),
+            ]);
+        }
+
         $request->validate([
             'blood_group' => ['required', 'in:O+,O-,A+,A-,B+,B-,AB+,AB-'],
             'lat' => ['required', 'numeric'],
@@ -39,20 +45,18 @@ class DonorController extends Controller
         $radiusKm = $request->float('radius_km', 10);
         $compatibleGroups = User::compatibleDonorGroups($request->string('blood_group'));
 
+        $haversine = '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))';
+
         $donors = User::query()
             ->donors()
             ->available()
             ->eligible()
             ->whereIn('blood_group', $compatibleGroups)
-            ->selectRaw(
-                '*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) *
-                     cos(radians(longitude) - radians(?)) + sin(radians(?)) *
-                     sin(radians(latitude)))) AS distance_km',
-                [$lat, $lng, $lat]
-            )
-            ->havingRaw('distance_km <= ?', [$radiusKm])
+            ->selectRaw("*, {$haversine} AS distance_km", [$lat, $lng, $lat])
             ->orderBy('distance_km')
-            ->get();
+            ->get()
+            ->filter(fn ($donor) => $donor->distance_km <= $radiusKm)
+            ->values();
 
         return response()->json($donors);
     }

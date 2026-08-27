@@ -10,6 +10,20 @@ use Illuminate\Http\Request;
 
 class BloodRequestController extends Controller
 {
+    /**
+     * Get all active emergency requests for all users and donors.
+     */
+    public function index(Request $request)
+    {
+        // Fetch open or matched requests, newest first
+        $requests = BloodRequest::with('requester')
+            ->whereIn('status', ['open', 'matched'])
+            ->latest()
+            ->get();
+
+        return response()->json($requests, 200);
+    }
+
     public function store(StoreBloodRequestRequest $request)
     {
         $bloodRequest = BloodRequest::create([

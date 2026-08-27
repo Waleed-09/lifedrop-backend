@@ -30,21 +30,21 @@ class MatchDonorsJob implements ShouldQueue
 
         $compatibleGroups = User::compatibleDonorGroups($this->bloodRequest->blood_group);
 
+        $haversine = '(6371 * acos(cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))';
+        $lat = $this->bloodRequest->latitude;
+        $lng = $this->bloodRequest->longitude;
+
         $donors = User::query()
             ->donors()
             ->available()
             ->eligible()
             ->whereIn('blood_group', $compatibleGroups)
-            ->selectRaw(
-                '*, (6371 * acos(cos(radians(?)) * cos(radians(latitude)) *
-                     cos(radians(longitude) - radians(?)) + sin(radians(?)) *
-                     sin(radians(latitude)))) AS distance_km',
-                [$this->bloodRequest->latitude, $this->bloodRequest->longitude, $this->bloodRequest->latitude]
-            )
-            ->havingRaw('distance_km <= ?', [$radiusKm])
+            ->selectRaw("*, {$haversine} AS distance_km", [$lat, $lng, $lat])
             ->orderBy('distance_km')
             ->limit(50)
-            ->get();
+            ->get()
+            ->filter(fn ($donor) => $donor->distance_km <= $radiusKm)
+            ->values();
 
         foreach ($donors as $donor) {
             $this->bloodRequest->matchedDonors()->syncWithoutDetaching([
