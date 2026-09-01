@@ -97,7 +97,7 @@ composer test
 
 For security and repository efficiency, the following files and folders are **strictly ignored** and will **NOT** be uploaded to GitHub:
 
-- ❌ **Environment & Credentials**: `.env`, `.env.local`, `.env.production`, `auth.json` (contains sensitive passwords, API keys, database credentials)
+- ❌ **Environment & Credentials**: `.env`, `.env.local`, `.env.production`, `auth.json` (contains sensitive passwords, API keys, database credentials).
 - ❌ **Dependencies**: `/vendor`, `/node_modules` (can be restored via `composer install` / `npm install`)
 - ❌ **Storage & Logs**: `/storage/logs/*.log`, `/storage/framework/cache/*`, `/storage/framework/views/*`, `/storage/*.key`
 - ❌ **Local Databases & Cache**: `*.sqlite`, `*.sqlite-journal`, `.phpunit.result.cache`
